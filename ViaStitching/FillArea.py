@@ -32,7 +32,7 @@ import pprint
 import wx
 from inspect import currentframe, getframeinfo
 import time
-
+import math
 
 def wxPrint(msg):
     wx.LogMessage(msg)
@@ -341,6 +341,92 @@ STEP         = '-'
 
         return self.REASON_OK
 
+    def CheckViaInAllTracks(self, x, y, all_tracks):
+        '''
+        Checks if an existing Via collides with another track
+        '''
+        l_clearance = self.clearance + self.size
+        result = self.REASON_OK
+        if l_clearance < self.step:
+            l_clearance = self.step
+        for track in all_tracks:
+            # Define the start and end points of the track
+            start_point = track.GetStart()
+            end_point = track.GetEnd()
+
+            # Define the width of the track
+            width = track.GetWidth()
+
+            # Define the point to calculate the distance from the track
+            point = VECTOR2I(x, y)
+
+            # Calculate the vector from the start point to the end point of the track
+            delta = end_point - start_point
+
+            # Calculate the length of the vector
+            length = math.sqrt(delta.x**2 + delta.y**2)
+
+            # Calculate the unit vector in the direction of the track
+            unit_vector = delta / length
+
+            # Calculate the vector from the start point to the point to be tested
+            test_vector = point - start_point
+
+            # Calculate the projection of the test vector onto the unit vector
+            projection = test_vector.Dot(unit_vector)
+
+            # Calculate the closest point on the track to the test point
+            if projection < 0:
+                closest_point = start_point
+            elif projection > length:
+                closest_point = end_point
+            else:
+                closest_point = start_point + unit_vector * projection
+
+            # Calculate the distance between the test point and the closest point on the track
+            distance = sqrt((closest_point.x - point.x)**2 + (closest_point.y - point.y)**2) - width/2
+
+            print("The minimum distance between the point and the track is {}.".format(distance))
+
+            if distance < l_clearance:
+                result = self.REASON_TRACK
+                break
+        return result
+
+    def CheckViaInAllPads(self, x, y, all_pads):
+        '''
+        Checks if an existing Via collides with another pad
+        '''
+        l_clearance = self.clearance + self.size
+        result = self.REASON_OK
+        if l_clearance < self.step:
+            l_clearance = self.step
+        for pad in all_pads:
+            point = VECTOR2I(x, y)
+
+            # Get the position and size of the pad
+            pad_position = pad.GetPosition()
+            max_size = max(pad.GetSize().x, pad.GetSize().y)
+
+            # Calculate the bounding box of the pad
+            bbox_left = pad_position.x - max_size/2
+            bbox_right = pad_position.x + max_size/2
+            bbox_bottom = pad_position.y - max_size/2
+            bbox_top = pad_position.y + max_size/2
+
+            # Find the closest point on the bounding box to the test point
+            closest_x = max(bbox_left, min(point[0], bbox_right))
+            closest_y = max(bbox_bottom, min(point[1], bbox_top))
+
+            # Calculate the distance between the test point and the closest point on the bounding box
+            distance = math.sqrt((closest_x - point[0])**2 + (closest_y - point[1])**2)
+
+            print("The distance between the point and the pad is {}.".format(distance))
+            if distance < l_clearance:
+                result = self.REASON_PAD
+                break
+        return result
+
     def ClearViaInStepSize(self, rectangle, x, y, distance):
         '''
         Stepsize==0
@@ -411,9 +497,11 @@ STEP         = '-'
             p = outline.PointAlong(l)
 
             if all(self.CheckViaDistance(p, via, outline_parent) for via in all_vias):
-                via = self.AddVia(p.getWxPoint(), 0, 0)
-                all_vias.append(via)
-                via_placed += 1
+                if ((self.REASON_OK == self.CheckViaInAllTracks(p.x, p.y, self.pcb.GetTracks())) and
+                    (self.REASON_OK == self.CheckViaInAllPads(p.x, p.y, self.pcb.GetPads()))):
+                    via = self.AddVia(p.getWxPoint(), 0, 0)
+                    all_vias.append(via)
+                    via_placed += 1
         return via_placed
 
     def ConcentricFillVias(self):
@@ -522,7 +610,7 @@ STEP         = '-'
             self.pcb_group = PCB_GROUP(None)
             self.pcb_group.SetName(VIA_GROUP_NAME)
             self.pcb.Add(self.pcb_group)
-
+        self.fill_type = self.FILL_TYPE_OUTLINE
         if self.fill_type == self.FILL_TYPE_CONCENTRIC or self.fill_type == self.FILL_TYPE_OUTLINE or self.fill_type == self.FILL_TYPE_OUTLINE_NO_HOLES:
             self.ConcentricFillVias()
             if self.filename:
