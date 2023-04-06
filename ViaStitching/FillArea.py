@@ -610,7 +610,7 @@ STEP         = '-'
             self.pcb_group = PCB_GROUP(None)
             self.pcb_group.SetName(VIA_GROUP_NAME)
             self.pcb.Add(self.pcb_group)
-        self.fill_type = self.FILL_TYPE_OUTLINE
+
         if self.fill_type == self.FILL_TYPE_CONCENTRIC or self.fill_type == self.FILL_TYPE_OUTLINE or self.fill_type == self.FILL_TYPE_OUTLINE_NO_HOLES:
             self.ConcentricFillVias()
             if self.filename:
