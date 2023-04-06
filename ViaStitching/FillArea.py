@@ -121,11 +121,11 @@ class FillArea:
         # Set the filename
         self.SetFile(filename)
         # Step between via
-        self.SetStepMM(2.54)
+        self.SetStepMM(0.6)
         # Size of the via (diameter of copper)
-        self.SetSizeMM(0.46)
+        self.SetSizeMM(0.6)
         # Size of the drill (diameter)
-        self.SetDrillMM(0.20)
+        self.SetDrillMM(0.3)
         # Isolation between via and other elements
         # ie: radius from the border of the via
         self.SetClearanceMM(0.2)

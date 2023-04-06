@@ -53,7 +53,7 @@ class FillAreaAction(pcbnew.ActionPlugin):
     def Run(self):
         a = FillAreaDialogEx(None)
         # a.m_SizeMM.SetValue("0.8")
-        a.m_StepMM.SetValue("2.54")
+        a.m_StepMM.SetValue("0.6")
         # a.m_DrillMM.SetValue("0.3")
         # a.m_Netname.SetValue("GND")
         # a.m_ClearanceMM.SetValue("0.2")
